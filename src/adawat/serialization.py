@@ -131,7 +131,6 @@ def load_object(obj, attrs: List[str], *args, **kwargs):
             'Invalid attrs. Expecting a list of at least one item.')
 
     fp = object_filepath(obj, *args, **kwargs)
-    print(f"Loading state from {fp}")
     if not os.path.isfile(fp):
         return False
 
@@ -148,7 +147,7 @@ def load_object(obj, attrs: List[str], *args, **kwargs):
     return True
 
 
-def stateful(attrs):
+def stateful(attrs: List[str]):
     """
     A decorator that can be applied to a class to make it save its status to the
     disk and automatically used the saved status next time the object is
@@ -175,11 +174,10 @@ class StatefulObject():
 
         def new_init(self, *args, **kwargs):
             if 'force_init' in kwargs and kwargs['force_init'] == True:
-                print("force_init is True; forcing initialization.")
+                del kwargs['force_init']
                 init(self, *args, **kwargs)
                 save_object(self, attrs, *args, **kwargs)
             elif not load_object(self, attrs, *args, **kwargs):
-                print("Couldn't find a state file. Initiliazing object normally.")
                 init(self, *args, **kwargs)
                 save_object(self, attrs, *args, **kwargs)
 
@@ -188,3 +186,8 @@ class StatefulObject():
         return cls
 
     return stateful_decorator
+
+
+__all__ = [
+    "stateful"
+]
