@@ -1,5 +1,7 @@
-from adawat.serialization import stateful
+import os
+from itertools import islice
 import nltk
+from adawat.serialization import stateful
 
 
 UNKNOWN_WORD = '<unk>'
@@ -13,15 +15,19 @@ UNKNOWN_WORD = '<unk>'
     '_idx2word',
 ])
 class Corpus():
-    def __init__(self, filepath: str):
-        self._load_raw_text(filepath)
+    def __init__(self, filepath: str, max_lines=None):
+        self._load_raw_text(filepath, max_lines)
         self._extract_tokens()
         self._build_vocab()
         self._build_idxs()
 
-    def _load_raw_text(self, filepath: str):
+    def _load_raw_text(self, filepath: str, max_lines=None):
         with open(filepath, "r") as f:
-            self._raw_text = f.read()
+            if max_lines is not None:
+                self._raw_text = os.linesep.join(
+                    islice(f.readlines(), max_lines))
+            else:
+                self._raw_text = f.read()
 
     def _extract_tokens(self):
         self.tokens = nltk.word_tokenize(self._raw_text)
