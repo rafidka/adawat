@@ -57,8 +57,12 @@ class ToPyTorchTensor(object):
     Converts a Python list or a NumPy list to a PyTorch vector.
     """
 
-    def __init__(self, dtype):
+    def __init__(self, dtype, device=None):
         self.dtype = dtype
+        self.device = device
 
     def __call__(self, list):
+        if self.device is not None:
+            return torch.tensor(list, dtype=self.dtype, device=self.device)
+        else:
         return torch.tensor(list, dtype=self.dtype)
