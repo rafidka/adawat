@@ -52,6 +52,27 @@ class WordsToIndices(Generic[TWord, TIdx]):
         return [self.word2idx(word) for word in words]
 
 
+class WordToOneHot(Generic[TWord, TIdx]):
+    """
+    Converts words to one-hot encoding based on a dictionary.
+    """
+
+    def __init__(self, word2idx: Callable[[TWord], TIdx], vocab_size: int):
+        """
+        word2idx -- A function that retrieves a unique index for a word.
+        vocab_size -- The size of the dictionary. This is used to decide the
+                      size of the one-hot vector.
+        """
+        self.word2idx = word2idx
+        self.vocab_size = vocab_size
+
+    def __call__(self, word: TWord) -> TIdx:
+        idx = self.word2idx(word)
+        onehot = [0] * self.vocab_size
+        onehot[idx] = 1
+        return onehot
+
+
 class ToPyTorchTensor(object):
     """
     Converts a Python list or a NumPy list to a PyTorch vector.
