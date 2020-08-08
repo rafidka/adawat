@@ -1,6 +1,10 @@
 import torch
 from torch import nn
 from typing import Any, Callable
+import logging
+
+
+log = logging.getLogger(__name__)
 
 
 class ModelTrainer:
@@ -33,6 +37,8 @@ class ModelTrainer:
                      train_loader: torch.utils.data.DataLoader):
         total_loss = 0.0
 
+        iter_count = len(train_loader)
+        last_perc_completed = 0
         for i, (X, y) in enumerate(train_loader):
             model.zero_grad()
 

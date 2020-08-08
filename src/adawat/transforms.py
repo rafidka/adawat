@@ -38,7 +38,7 @@ class WordToIndex(Generic[TWord, TIdx]):
 
 class WordsToIndices(Generic[TWord, TIdx]):
     """
-    List-version of WordToIndex transform, i.e. coverts multiple worsd to their
+    List-version of WordToIndex transform, i.e. coverts multiple words to their
     corresponding indices.
     """
 
@@ -86,4 +86,4 @@ class ToPyTorchTensor(object):
         if self.device is not None:
             return torch.tensor(list, dtype=self.dtype, device=self.device)
         else:
-        return torch.tensor(list, dtype=self.dtype)
+            return torch.tensor(list, dtype=self.dtype)
