@@ -33,7 +33,9 @@ class ModelTrainer:
                      train_loader: torch.utils.data.DataLoader):
         total_loss = 0.0
 
-        for X, y in train_loader:
+        for i, (X, y) in enumerate(train_loader):
+            model.zero_grad()
+
             y_train = model(X)
 
             loss = loss_fn(y_train, y)
@@ -43,16 +45,26 @@ class ModelTrainer:
 
             total_loss += loss.item()
 
-        return total_loss
+            perc_completed = i * 100 // iter_count
+            if perc_completed == 100 or perc_completed >= last_perc_completed + 5:
+                log.info(f"Finished {perc_completed}%.")
+                last_perc_completed = perc_completed
+
+        return total_loss / iter_count
 
     def train(self, train_loader: torch.utils.data.DataLoader,
-              epochs: int, device: torch.cuda.device):
+              epochs: int, device: torch.cuda.device = None):
         model = self.model_creator()
+        if device is not None:
+            model.to(device)
         loss_fn = self.loss_fn_creator()
         optimizer = self.optim_creator(model.parameters())
 
         losses = []
-        for _ in range(epochs):
-            losses.append(self._train_epoch(
-                model, loss_fn, optimizer, train_loader))
+        for i in range(epochs):
+            log.info(f"Starting epoch {i + 1}")
+            loss = self._train_epoch(
+                model, loss_fn, optimizer, train_loader)
+            log.info(f"Finished epoch {i + 1}. Loss is {loss}.")
+            losses.append(loss)
         return model, losses
