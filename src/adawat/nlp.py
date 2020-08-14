@@ -1,6 +1,7 @@
 import os
 from collections import Counter
 from itertools import islice
+from typing import Callable
 import nltk
 from adawat.serialization import stateful
 
@@ -16,18 +17,25 @@ UNKNOWN_WORD = '<unk>'
     '_idx2word',
 ])
 class Corpus():
-    def __init__(self, filepath: str, max_lines=None, max_vocab=None):
-        self._load_raw_text(filepath, max_lines)
+    def __init__(self, filepath: str, max_lines=None, max_vocab=None,
+                 preprocessor: Callable[[str], str] = None):
+        self._load_raw_text(filepath, max_lines, preprocessor)
         self._extract_tokens()
         self._build_vocab(max_vocab)
         self._build_idxs()
 
-    def _load_raw_text(self, filepath: str, max_lines=None):
+    def _load_raw_text(self, filepath: str, max_lines=None,
+                       preprocessor: Callable[[str], str] = None):
+        if preprocessor is None:
+            def preprocessor(line): return line
+
         with open(filepath, "r") as f:
             if max_lines is not None:
-                self._raw_text = list(islice(f, max_lines))
+                self._raw_text = [preprocessor(line)
+                                  for line in islice(f, max_lines)]
             else:
-                self._raw_text = list(f)
+                self._raw_text = [preprocessor(line)
+                                  for line in f]
 
     def _extract_tokens(self):
         self.tokens_per_line = [nltk.word_tokenize(line)
