@@ -52,8 +52,9 @@ class ModelTrainer:
             total_loss += loss.item()
 
             perc_completed = i * 100 // iter_count
-            if perc_completed == 100 or perc_completed >= last_perc_completed + 5:
-                log.info(f"Finished {perc_completed}%.")
+            if perc_completed == 100 or perc_completed > last_perc_completed:
+                log.info(
+                    f"Finished {perc_completed}%. Loss is {total_loss/(i+1)}.")
                 last_perc_completed = perc_completed
 
         return total_loss / iter_count

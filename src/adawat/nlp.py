@@ -10,6 +10,7 @@ UNKNOWN_WORD = '<unk>'
 
 
 @stateful(attrs=[
+    'tokens_per_line',
     'tokens',
     'vocab',
     'vocab_size',
