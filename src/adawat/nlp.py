@@ -1,7 +1,8 @@
 import os
 from collections import Counter
 from itertools import islice
-from typing import Callable
+from typing import Callable, Iterable
+import gzip
 import nltk
 from adawat.serialization import stateful
 
@@ -18,25 +19,23 @@ UNKNOWN_WORD = '<unk>'
     '_idx2word',
 ])
 class Corpus():
-    def __init__(self, filepath: str, max_lines=None, max_vocab=None,
+    def __init__(self,
+                 lines: Iterable[str],
+                 max_vocab=None,
+                 min_word_freq=None,
                  preprocessor: Callable[[str], str] = None):
-        self._load_raw_text(filepath, max_lines, preprocessor)
+        self._load_raw_text(lines, preprocessor)
         self._extract_tokens()
-        self._build_vocab(max_vocab)
+        self._build_vocab(max_vocab, min_word_freq)
         self._build_idxs()
 
-    def _load_raw_text(self, filepath: str, max_lines=None,
+    def _load_raw_text(self,
+                       lines: Iterable[str],
                        preprocessor: Callable[[str], str] = None):
         if preprocessor is None:
-            def preprocessor(line): return line
+            def preprocessor(line: str) -> str: return line
 
-        with open(filepath, "r") as f:
-            if max_lines is not None:
-                self._raw_text = [preprocessor(line)
-                                  for line in islice(f, max_lines)]
-            else:
-                self._raw_text = [preprocessor(line)
-                                  for line in f]
+        self._raw_text = [preprocessor(line) for line in lines]
 
     def _extract_tokens(self):
         self.tokens_per_line = [nltk.word_tokenize(line)
@@ -45,12 +44,13 @@ class Corpus():
                        for line_tokens in self.tokens_per_line
                        for token in line_tokens]
 
-    def _build_vocab(self, max_vocab=None):
-        if max_vocab is not None:
-            self.vocab = [UNKNOWN_WORD] + [key for key,
-                                           value in Counter(self.tokens).most_common(max_vocab)]
-        else:
-            self.vocab = [UNKNOWN_WORD] + list(set(self.tokens))
+    def _build_vocab(self, max_vocab=None, min_word_freq=None):
+        counter = Counter(self.tokens).most_common(max_vocab)
+        if min_word_freq is None:
+            min_word_freq = 1
+        self.vocab = [UNKNOWN_WORD] + [key
+                                       for key, count in counter
+                                       if count >= min_word_freq]
         self.vocab_size = len(self.vocab)
 
     def _build_idxs(self):

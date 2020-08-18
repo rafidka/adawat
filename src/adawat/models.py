@@ -18,7 +18,8 @@ class ModelTrainer:
 
     def __init__(self, model_creator: Callable[[], nn.Module],
                  loss_fn_creator: Callable[[], nn.Module],
-                 optim_creator: Callable[[Any], torch.optim.Optimizer]):
+                 optim_creator: Callable[[Any], torch.optim.Optimizer],
+                 optim_updater: Callable[[torch.optim.Optimizer, int, int, int], None] = None):
         """
         model_creator -- A function with no parameters that when called create
                          the model.
@@ -31,15 +32,18 @@ class ModelTrainer:
         self.model_creator = model_creator
         self.loss_fn_creator = loss_fn_creator
         self.optim_creator = optim_creator
+        self.optim_updater = optim_updater
 
-    def _train_epoch(self, model: nn.Module, loss_fn: nn.Module,
-                     optimizer: torch.optim.Optimizer,
+    def _train_epoch(self, model: nn.Module, epoch: int,
+                     loss_fn: nn.Module, optimizer: torch.optim.Optimizer,
                      train_loader: torch.utils.data.DataLoader):
         total_loss = 0.0
 
         iter_count = len(train_loader)
         last_perc_completed = 0
         for i, (X, y) in enumerate(train_loader):
+            if self.optim_updater is not None:
+                self.optim_updater(optimizer, epoch, i, iter_count)
             model.zero_grad()
 
             y_train = model(X)
