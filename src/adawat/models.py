@@ -75,7 +75,7 @@ class ModelTrainer:
         for i in range(epochs):
             log.info(f"Starting epoch {i + 1}")
             loss = self._train_epoch(
-                model, loss_fn, optimizer, train_loader)
+                model, i, loss_fn, optimizer, train_loader)
             log.info(f"Finished epoch {i + 1}. Loss is {loss}.")
             losses.append(loss)
         return model, losses
