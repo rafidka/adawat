@@ -21,25 +21,20 @@ UNKNOWN_WORD = '<unk>'
 class Corpus():
     def __init__(self,
                  lines: Iterable[str],
-                 max_vocab=None,
-                 min_word_freq=None,
+                 max_vocab: int = None,
+                 min_word_freq: int = None,
                  preprocessor: Callable[[str], str] = None):
-        self._load_raw_text(lines, preprocessor)
-        self._extract_tokens()
+        self._extract_tokens(lines, preprocessor)
         self._build_vocab(max_vocab, min_word_freq)
         self._build_idxs()
 
-    def _load_raw_text(self,
-                       lines: Iterable[str],
-                       preprocessor: Callable[[str], str] = None):
+    def _extract_tokens(self,
+                        lines: Iterable[str],
+                        preprocessor: Callable[[str], str] = None):
         if preprocessor is None:
             def preprocessor(line: str) -> str: return line
-
-        self._raw_text = [preprocessor(line) for line in lines]
-
-    def _extract_tokens(self):
-        self.tokens_per_line = [nltk.word_tokenize(line)
-                                for line in self._raw_text]
+        self.tokens_per_line = [nltk.word_tokenize(preprocessor(line))
+                                for line in lines]
         self.tokens = [token
                        for line_tokens in self.tokens_per_line
                        for token in line_tokens]
