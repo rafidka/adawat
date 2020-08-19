@@ -1,6 +1,10 @@
 import torch
 from torch import nn
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Iterable
+
+from torch.utils.data.dataloader import DataLoader
+
+DataLoader
 
 
 class ListDataset(torch.utils.data.Dataset):
@@ -11,8 +15,8 @@ class ListDataset(torch.utils.data.Dataset):
                  features_transform: Callable[[Any], torch.tensor] = None,
                  targets_transform: Callable[[Any], torch.tensor] = None):
         if len(features) != len(targets):
-            raise ValueError(f"X and y must be of the same length. Received " +
-                             "{len(X)} for X and {len(y)} for y.")
+            raise ValueError("X and y must be of the same length. Received " +
+                             f"{len(features)} for X and {len(targets)} for y.")
         self.features = features
         self.targets = targets
         # save length in case it is expensive to calculate
@@ -26,3 +30,31 @@ class ListDataset(torch.utils.data.Dataset):
 
     def __len__(self) -> int:
         return self.len
+
+
+class IterableDataset(torch.utils.data.IterableDataset):
+    def __init__(self, features: Iterable, targets: Iterable,
+                 features_transform: Callable[[Any], torch.tensor] = None,
+                 targets_transform: Callable[[Any], torch.tensor] = None,
+                 length: int = None):
+        self.features = features
+        self.targets = targets
+        self.features_transform = features_transform if features_transform is not None else lambda x: x
+        self.targets_transform = targets_transform if targets_transform is not None else lambda x: x
+        self.length = length
+
+    def __len__(self):
+        if self.length is None:
+            raise RuntimeError(
+                "Length was not specified during the instantiation of this " +
+                "dataset. For instances of IterableDataset, the length " +
+                "cannot be found without iterating through the iterable " +
+                "till the end, which could be an expensive operation and " +
+                "is against the nature of iterables.")
+        return self.length
+
+    def __iter__(self):
+        def transform(feature, target):
+            return (self.features_transform(feature), self.targets_transform(target))
+
+        return map(transform, self.features, self.targets)
