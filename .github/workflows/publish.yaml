@@ -15,11 +15,13 @@ jobs:
         with:
           python-version: "3.x"
       - name: Install build dependencies
-        run: pip install -U setuptools wheel build
+        # Install torch as adawat depends on it.
+        run: pip install -U setuptools wheel build torch==1.6.0+cpu
       - name: Build
         run: python -m build .
       - name: Test
-        run: python -m unittest discover -v -s ./tests -p '*_test.py'
+        # Add src/ folder to PYTHONPATH so we can import adawat during tests.
+        run: PYTHONPATH=${PWD}/src python -m unittest discover -v -s ./tests -p '*_test.py'
       - name: Publish
         uses: pypa/gh-action-pypi-publish@master
         with:
