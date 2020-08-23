@@ -16,7 +16,7 @@ jobs:
           python-version: "3.x"
       - name: Install build dependencies
         # Install torch as adawat depends on it.
-        run: pip install -U setuptools wheel build torch==1.6.0+cpu
+        run: pip install -U setuptools wheel build torch==1.5.1
       - name: Build
         run: python -m build .
       - name: Test
