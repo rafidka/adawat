@@ -1,89 +1,89 @@
-import unittest
+import pytest
 from adawat.serialization import object_sig, object_filepath, get_state, \
     update_state, load_object, save_object, stateful
 
 
-class TestClass():
+class SomeClass():
     def __init__(self, *args, **kwargs):
         pass
 
 
-class Test_object_sig(unittest.TestCase):
+class Test_object_sig:
     def test__object_sig(self):
-        actual_sig = object_sig(TestClass())
-        expected_sig = "TestClass;;;<no_args>;;;<no_kwargs>"
-        self.assertEqual(actual_sig, expected_sig)
+        actual_sig = object_sig(SomeClass())
+        expected_sig = "SomeClass;;;<no_args>;;;<no_kwargs>"
+        assert actual_sig == expected_sig
 
     def test__object_sig_with_args(self):
-        actual_sig = object_sig(TestClass(), 1, 2, 3)
-        expected_sig = "TestClass;;;1;;2;;3;;;<no_kwargs>"
-        self.assertEqual(actual_sig, expected_sig)
+        actual_sig = object_sig(SomeClass(), 1, 2, 3)
+        expected_sig = "SomeClass;;;1;;2;;3;;;<no_kwargs>"
+        assert actual_sig == expected_sig
 
     def test__object_sig_with_kwargs(self):
-        actual_sig = object_sig(TestClass(), key1='value1', key2='value2')
-        expected_sig = "TestClass;;;<no_args>;;;key1=value1;;key2=value2"
-        self.assertEqual(actual_sig, expected_sig)
+        actual_sig = object_sig(SomeClass(), key1='value1', key2='value2')
+        expected_sig = "SomeClass;;;<no_args>;;;key1=value1;;key2=value2"
+        assert actual_sig == expected_sig
 
     def test__object_sig_with_args_and_kwargs(self):
-        actual_sig = object_sig(TestClass(), 1, 2, 3,
+        actual_sig = object_sig(SomeClass(), 1, 2, 3,
                                 key1='value1', key2='value2')
-        expected_sig = "TestClass;;;1;;2;;3;;;key1=value1;;key2=value2"
-        self.assertEqual(actual_sig, expected_sig)
+        expected_sig = "SomeClass;;;1;;2;;3;;;key1=value1;;key2=value2"
+        assert actual_sig == expected_sig
 
 
-class Test_object_filepath(unittest.TestCase):
+class Test_object_filepath:
     def test__object_filepath(self):
-        actual_filepath = object_filepath(TestClass())
-        expected_filename = "f4f5939d459b2a53ae64d0a4652f82c44a0df8dfd78279ab00fc047a1776d140b.state"
-        self.assertTrue(actual_filepath.endswith(expected_filename),
-                        f'Expecting f{actual_filepath} to end with {expected_filename}')
+        actual_filepath = object_filepath(SomeClass())
+        expected_filename = "f5e132cc9e554c17346a190b6b97ce64f7a3f8e4570e5404f76ab06773885bb09.state"
+        assert actual_filepath.endswith(expected_filename), \
+            f'Expecting {actual_filepath} to end with {expected_filename}'
 
     def test__object_filepath_with_args(self):
-        actual_filepath = object_filepath(TestClass(), 1, 2, 3)
-        expected_filename = "f87e9eb2d2ceaf3b1cb18b5fa58a115634618f6080dadddf1dbb6651c64658d22.state"
-        self.assertTrue(actual_filepath.endswith(expected_filename),
-                        f'Expecting f{actual_filepath} to end with {expected_filename}')
+        actual_filepath = object_filepath(SomeClass(), 1, 2, 3)
+        expected_filename = "fd846994a24f5c07c3e65a9be30e06314feae2db268920b7228169f1c7118029a.state"
+        assert actual_filepath.endswith(expected_filename) == True, \
+            f'Expecting {actual_filepath} to end with {expected_filename}'
 
     def test__object_filepath_with_kwargs(self):
         actual_filepath = object_filepath(
-            TestClass(), key1='value1', key2='value2')
-        expected_filename = "f2af8230ad0795fb4bb544987a0166191869d807d678e70c3c003448b0913e79f.state"
-        self.assertTrue(actual_filepath.endswith(expected_filename),
-                        f'Expecting f{actual_filepath} to end with {expected_filename}')
+            SomeClass(), key1='value1', key2='value2')
+        expected_filename = "f84b373381e136591a5f1d1d9be7ec8d088ae22a6181db475092e2347e6efa95a.state"
+        assert actual_filepath.endswith(expected_filename) == True, \
+            f'Expecting {actual_filepath} to end with {expected_filename}'
 
     def test__object_filepath_with_args_and_kwargs(self):
-        actual_filepath = object_filepath(TestClass(), 1, 2, 3,
+        actual_filepath = object_filepath(SomeClass(), 1, 2, 3,
                                           key1='value1', key2='value2')
-        expected_filename = "fa3bebec3ba7f68d58bec89a5a74fa27e0d27146377162f50c2d6b7637c5007d0.state"
-        self.assertTrue(actual_filepath.endswith(expected_filename),
-                        f'Expecting f{actual_filepath} to end with {expected_filename}')
+        expected_filename = "f89d478b3e774453d3d6dda465d04767951c4a7f22996a4bbc692e353de7f3735.state"
+        assert actual_filepath.endswith(expected_filename) == True, \
+            f'Expecting {actual_filepath} to end with {expected_filename}'
 
 
-class Test_get_state(unittest.TestCase):
+class Test_get_state:
     def test(self):
-        obj = TestClass()
+        obj = SomeClass()
         obj.name = 'Test Name'
         obj.value = 123
 
         state = get_state(obj, ['name', 'value'])
-        self.assertEqual(state, ['Test Name', 123])
+        assert state == ['Test Name', 123]
 
 
-class Test_update_state(unittest.TestCase):
+class Test_update_state:
     def test(self):
-        obj = TestClass()
+        obj = SomeClass()
         obj.name = 'Test Name'
         obj.value = 123
 
         update_state(obj, ['name', 'value'], ['Test Name - Updated', 12345])
 
-        self.assertEqual(obj.name, 'Test Name - Updated')
-        self.assertEqual(obj.value, 12345)
+        assert obj.name == 'Test Name - Updated'
+        assert obj.value == 12345
 
 
-class Test_save_load_state(unittest.TestCase):
+class Test_save_load_state:
     def test(self):
-        obj = TestClass()
+        obj = SomeClass()
         obj.name = 'Test Name'
         obj.value = 123
         obj.unsaved_value = 102030
@@ -91,19 +91,19 @@ class Test_save_load_state(unittest.TestCase):
         filepath = object_filepath(obj, ['name', 'value'])
         save_object(obj, ['name', 'value'], filepath)
 
-        obj2 = TestClass()
+        obj2 = SomeClass()
         obj2.unsaved_value = 405060
         load_object(obj2, ['name', 'value'], filepath)
 
-        self.assertEqual(obj.name, obj2.name)
-        self.assertEqual(obj.value, obj2.value)
-        self.assertEqual(obj2.unsaved_value, 405060)
+        assert obj.name == obj2.name
+        assert obj.value == obj2.value
+        assert obj2.unsaved_value == 405060
 
 
-class Test_stateful_save_method(unittest.TestCase):
+class Test_stateful_save_method:
     def test_conflicting_method_name(self):
-        with self.assertRaises(RuntimeError):
-            @stateful(save_state_method_name='save_state')
+        with pytest.raises(RuntimeError):
+            @ stateful(save_state_method_name='save_state')
             class TestWithConflictingStateMethod:
                 def __init__(self):
                     self.state_dict = {}
@@ -114,22 +114,20 @@ class Test_stateful_save_method(unittest.TestCase):
 
     def test_nonconflicting_method_name(self):
         try:
-            @stateful(save_state_method_name='save_state')
+            @ stateful(save_state_method_name='save_state')
             class TestWithoutConflictingStateMethod:
                 def __init__(self):
                     self.state_dict = {}
 
                 def save_state_other(self):
                     pass
-            self.assertTrue(
-                hasattr(TestWithoutConflictingStateMethod, 'save_state'))
-            self.assertTrue(
-                callable(TestWithoutConflictingStateMethod.save_state))
+            assert hasattr(TestWithoutConflictingStateMethod, 'save_state')
+            assert callable(TestWithoutConflictingStateMethod.save_state)
         except Exception:
             self.fail()
 
     def test_method_behaviour(self):
-        @stateful(attrs=['state_dict'])
+        @ stateful(attrs=['state_dict'])
         class StatefulObject():
             def __init__(self):
                 self.state_dict = {}
@@ -144,4 +142,4 @@ class Test_stateful_save_method(unittest.TestCase):
 
         # re-instantiate the object and ensure the state is as expected
         obj = StatefulObject()
-        self.assertEqual(obj.state_dict, some_state)
+        assert obj.state_dict == some_state

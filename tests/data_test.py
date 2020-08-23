@@ -2,13 +2,12 @@
 # testing in general, but rather to support the `find_packages` example in
 # setup.py that excludes installing the "tests" package
 
-import unittest
 import torch
 from torch.utils.data import DataLoader
 from adawat.data import ListDataset
 
 
-class TestListDataset(unittest.TestCase):
+class TestListDataset:
     features = list(range(10))
     targets = list(range(10))
     letter_features = ['a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1']
@@ -17,7 +16,7 @@ class TestListDataset(unittest.TestCase):
     def test_getitem(self):
         dataset = ListDataset(self.features, self.targets)
         for i, (X, y) in enumerate(dataset):
-            self.assertEqual((X, y), (self.features[i], self.targets[i]))
+            assert (X, y) == (self.features[i], self.targets[i])
 
     def test_getitem_with_transform(self):
         def transform_feature(feature):
@@ -31,11 +30,11 @@ class TestListDataset(unittest.TestCase):
         for i, (X, y) in enumerate(dataset):
             X_transformed = transform_feature(self.features[i])
             y_transformed = transform_target(self.targets[i])
-            self.assertEqual((X, y), (X_transformed, y_transformed))
+            assert (X, y) == (X_transformed, y_transformed)
 
     def test_len(self):
         dataset = ListDataset(self.features, self.targets)
-        self.assertEqual(len(self.features), len(dataset))
+        assert len(self.features) == len(dataset)
 
     def test_use_dataloader(self):
         dataset = ListDataset(self.features, self.targets)
@@ -46,8 +45,8 @@ class TestListDataset(unittest.TestCase):
             batch_end = (i + 1) * batch_size
             X_org = torch.tensor(self.features[batch_start:batch_end])
             y_org = torch.tensor(self.targets[batch_start:batch_end])
-            self.assertTrue(torch.all(torch.eq(X, X_org)))
-            self.assertTrue(torch.all(torch.eq(y, y_org)))
+            assert torch.all(torch.eq(X, X_org)) == True
+            assert torch.all(torch.eq(y, y_org)) == True
 
     def test_use_dataloader_with_letters(self):
         dataset = ListDataset(self.letter_features, self.letter_targets)
@@ -56,7 +55,5 @@ class TestListDataset(unittest.TestCase):
         for i, (X, y) in enumerate(dataloader):
             batch_start = i * batch_size
             batch_end = (i + 1) * batch_size
-            self.assertEqual(
-                X, tuple(self.letter_features[batch_start:batch_end]))
-            self.assertEqual(
-                y, tuple(self.letter_targets[batch_start:batch_end]))
+            assert X == tuple(self.letter_features[batch_start:batch_end])
+            assert y == tuple(self.letter_targets[batch_start:batch_end])
