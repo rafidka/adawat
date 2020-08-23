@@ -1,6 +1,6 @@
 import unittest
 from adawat.serialization import object_sig, object_filepath, get_state, \
-    update_state, load_object, save_object
+    update_state, load_object, save_object, stateful
 
 
 class TestClass():
@@ -88,12 +88,60 @@ class Test_save_load_state(unittest.TestCase):
         obj.value = 123
         obj.unsaved_value = 102030
 
-        save_object(obj, ['name', 'value'])
+        filepath = object_filepath(obj, ['name', 'value'])
+        save_object(obj, ['name', 'value'], filepath)
 
         obj2 = TestClass()
         obj2.unsaved_value = 405060
-        load_object(obj2, ['name', 'value'])
+        load_object(obj2, ['name', 'value'], filepath)
 
         self.assertEqual(obj.name, obj2.name)
         self.assertEqual(obj.value, obj2.value)
         self.assertEqual(obj2.unsaved_value, 405060)
+
+
+class Test_stateful_save_method(unittest.TestCase):
+    def test_conflicting_method_name(self):
+        with self.assertRaises(RuntimeError):
+            @stateful(save_state_method_name='save_state')
+            class TestWithConflictingStateMethod:
+                def __init__(self):
+                    self.state_dict = {}
+
+                def save_state(self):
+                    pass
+            TestWithConflictingStateMethod()  # to avoid unused class warning
+
+    def test_nonconflicting_method_name(self):
+        try:
+            @stateful(save_state_method_name='save_state')
+            class TestWithoutConflictingStateMethod:
+                def __init__(self):
+                    self.state_dict = {}
+
+                def save_state_other(self):
+                    pass
+            self.assertTrue(
+                hasattr(TestWithoutConflictingStateMethod, 'save_state'))
+            self.assertTrue(
+                callable(TestWithoutConflictingStateMethod.save_state))
+        except Exception:
+            self.fail()
+
+    def test_method_behaviour(self):
+        @stateful(attrs=['state_dict'])
+        class StatefulObject():
+            def __init__(self):
+                self.state_dict = {}
+
+        some_state = {
+            'test_key': 'test_value'
+        }
+
+        obj = StatefulObject()
+        obj.state_dict = some_state
+        obj.save_state()
+
+        # re-instantiate the object and ensure the state is as expected
+        obj = StatefulObject()
+        self.assertEqual(obj.state_dict, some_state)
