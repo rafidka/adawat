@@ -20,14 +20,18 @@ class TestListDataset(unittest.TestCase):
             self.assertEqual((X, y), (self.features[i], self.targets[i]))
 
     def test_getitem_with_transform(self):
-        def transform(X_y):
-            X, y = X_y
-            return (3 * X, 2 * y)
+        def transform_feature(feature):
+            return 3 * feature
 
-        dataset = ListDataset(self.features, self.targets, transform)
+        def transform_target(target):
+            return 2 * target
+
+        dataset = ListDataset(self.features, self.targets,
+                              transform_feature, transform_target)
         for i, (X, y) in enumerate(dataset):
-            self.assertEqual((X, y), transform((
-                self.features[i], self.targets[i])))
+            X_transformed = transform_feature(self.features[i])
+            y_transformed = transform_target(self.targets[i])
+            self.assertEqual((X, y), (X_transformed, y_transformed))
 
     def test_len(self):
         dataset = ListDataset(self.features, self.targets)
