@@ -1,6 +1,7 @@
 import pytest
-from adawat.serialization import object_sig, object_filepath, get_state, \
+from adawat.serialization import object_sig, object_id, get_state, \
     update_state, load_object, save_object, stateful
+from adawat.picklers import FilePickler
 
 
 class SomeClass():
@@ -31,32 +32,28 @@ class Test_object_sig:
         assert actual_sig == expected_sig
 
 
-class Test_object_filepath:
-    def test__object_filepath(self):
-        actual_filepath = object_filepath(SomeClass())
-        expected_filename = "f5e132cc9e554c17346a190b6b97ce64f7a3f8e4570e5404f76ab06773885bb09.state"
-        assert actual_filepath.endswith(expected_filename), \
-            f'Expecting {actual_filepath} to end with {expected_filename}'
+class Test_object_id:
+    def test__object_id(self):
+        actual_id = object_id(SomeClass())
+        expected_id = "5e132cc9e554c17346a190b6b97ce64f7a3f8e4570e5404f76ab06773885bb09"
+        assert actual_id == expected_id
 
-    def test__object_filepath_with_args(self):
-        actual_filepath = object_filepath(SomeClass(), 1, 2, 3)
-        expected_filename = "fd846994a24f5c07c3e65a9be30e06314feae2db268920b7228169f1c7118029a.state"
-        assert actual_filepath.endswith(expected_filename) == True, \
-            f'Expecting {actual_filepath} to end with {expected_filename}'
+    def test__object_id_with_args(self):
+        actual_id = object_id(SomeClass(), 1, 2, 3)
+        expected_id = "d846994a24f5c07c3e65a9be30e06314feae2db268920b7228169f1c7118029a"
+        assert actual_id == expected_id
 
-    def test__object_filepath_with_kwargs(self):
-        actual_filepath = object_filepath(
+    def test__object_id_with_kwargs(self):
+        actual_id = object_id(
             SomeClass(), key1='value1', key2='value2')
-        expected_filename = "f84b373381e136591a5f1d1d9be7ec8d088ae22a6181db475092e2347e6efa95a.state"
-        assert actual_filepath.endswith(expected_filename) == True, \
-            f'Expecting {actual_filepath} to end with {expected_filename}'
+        expected_id = "84b373381e136591a5f1d1d9be7ec8d088ae22a6181db475092e2347e6efa95a"
+        assert actual_id == expected_id
 
-    def test__object_filepath_with_args_and_kwargs(self):
-        actual_filepath = object_filepath(SomeClass(), 1, 2, 3,
-                                          key1='value1', key2='value2')
-        expected_filename = "f89d478b3e774453d3d6dda465d04767951c4a7f22996a4bbc692e353de7f3735.state"
-        assert actual_filepath.endswith(expected_filename) == True, \
-            f'Expecting {actual_filepath} to end with {expected_filename}'
+    def test__object_id_with_args_and_kwargs(self):
+        actual_id = object_id(SomeClass(), 1, 2, 3,
+                              key1='value1', key2='value2')
+        expected_id = "89d478b3e774453d3d6dda465d04767951c4a7f22996a4bbc692e353de7f3735"
+        assert actual_id == expected_id
 
 
 class Test_get_state:
@@ -81,19 +78,20 @@ class Test_update_state:
         assert obj.value == 12345
 
 
-class Test_save_load_state:
+class Test_save_load_object:
     def test(self):
         obj = SomeClass()
         obj.name = 'Test Name'
         obj.value = 123
         obj.unsaved_value = 102030
 
-        filepath = object_filepath(obj, ['name', 'value'])
-        save_object(obj, ['name', 'value'], filepath)
+        filepickler = FilePickler()
+        obj_id = object_id(obj, ['name', 'value'])
+        save_object(obj, obj_id, ['name', 'value'], filepickler)
 
         obj2 = SomeClass()
         obj2.unsaved_value = 405060
-        load_object(obj2, ['name', 'value'], filepath)
+        load_object(obj2, obj_id, ['name', 'value'], filepickler)
 
         assert obj.name == obj2.name
         assert obj.value == obj2.value
