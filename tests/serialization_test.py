@@ -1,6 +1,6 @@
 import pytest
-from adawat.serialization import object_sig, object_id, get_state, \
-    update_state, load_object, save_object, stateful
+from adawat.serialization import object_sig, object_id, get_obj_attrs, \
+    set_obj_attrs, unpickle_obj_attrs, pickle_obj_attrs, stateful
 from adawat.picklers import FilePickler
 
 
@@ -62,7 +62,7 @@ class Test_get_state:
         obj.name = 'Test Name'
         obj.value = 123
 
-        state = get_state(obj, ['name', 'value'])
+        state = get_obj_attrs(obj, ['name', 'value'])
         assert state == ['Test Name', 123]
 
 
@@ -72,7 +72,7 @@ class Test_update_state:
         obj.name = 'Test Name'
         obj.value = 123
 
-        update_state(obj, ['name', 'value'], ['Test Name - Updated', 12345])
+        set_obj_attrs(obj, ['name', 'value'], ['Test Name - Updated', 12345])
 
         assert obj.name == 'Test Name - Updated'
         assert obj.value == 12345
@@ -87,11 +87,11 @@ class Test_save_load_object:
 
         filepickler = FilePickler()
         obj_id = object_id(obj, ['name', 'value'])
-        save_object(obj, obj_id, ['name', 'value'], filepickler)
+        pickle_obj_attrs(obj, obj_id, ['name', 'value'], filepickler)
 
         obj2 = SomeClass()
         obj2.unsaved_value = 405060
-        load_object(obj2, obj_id, ['name', 'value'], filepickler)
+        unpickle_obj_attrs(obj2, obj_id, ['name', 'value'], filepickler)
 
         assert obj.name == obj2.name
         assert obj.value == obj2.value

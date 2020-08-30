@@ -8,21 +8,24 @@ from typing import Any, List
 from adawat.picklers import Pickler, FilePickler, ObjectNotFoundError
 
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 def object_sig(obj, *args, **kwargs) -> str:
     """
-    Generates a string that uniquely identifies an instances of a class
-    based on its initialization arguments. For example, given an instance
-    of class TestClass constructed as TestClass(1, 2, 3, arg1='val1'),
-    this method returns a unique signature based on the class name and
-    the passed arguments. The format of the output is easiest discovered
-    by a test call.
+    Generates a string that tries to uniquely identifies an instances of a class
+    based on its initialization arguments. For example, given an instance of
+    class TestClass constructed as TestClass(1, 2, 3, arg1='val1'), this method
+    returns a unique signature based on the class name and the passed arguments.
+    The format of the output is easiest discovered by a test call.
     """
     cls_name = obj.__class__.__name__
+    # Use 'str' instead of 'repr'. This is not ideal, since multiple different
+    # instances can have the same __str__ (which could also be the case for
+    # __repr__ but definitely the latter is way less likely), but using __repr__
+    #  can generate huge strings e.g. passing in a huge list.
     args_str = ';;'.join(map(str, args)) or "<no_args>"
-    kwargs_str = ';;'.join(['%s=%s' % (k, v)
+    kwargs_str = ';;'.join(['%s=%s' % (str(k), str(v))
                             for k, v in kwargs.items()]) or "<no_kwargs>"
     sig = ';;;'.join((cls_name, args_str, kwargs_str))
     return sig
@@ -48,14 +51,14 @@ def object_id(obj, *args, **kwargs) -> str:
     return hash  # use the hash as as an ID
 
 
-def get_state(obj, attrs: List[str]) -> List[Any]:
+def get_obj_attrs(obj, attrs: List[str]) -> List[Any]:
     """
     Given a list of attribute names, this method extracts the values of those
     attributes and return them in a list.
 
     Arguments:
-    obj -- the object
-    attrs -- a list containing the names of the attributes to be retrieved.
+    obj -- the object.
+    attrs -- a list containing the names of the attributes to retrieve.
 
     Returns:
     A list containing the values of the requested attributes.
@@ -63,7 +66,7 @@ def get_state(obj, attrs: List[str]) -> List[Any]:
     return [getattr(obj, attr) for attr in attrs]
 
 
-def update_state(obj, attrs: List[str], state: List[Any]):
+def set_obj_attrs(obj, attrs: List[str], values: List[Any]):
     """
     Given a list of attribute names and corresponding values, this method
     updates those attributes with the given values.
@@ -71,21 +74,20 @@ def update_state(obj, attrs: List[str], state: List[Any]):
     Arguments:
     obj -- the object
     attrs -- a list containing the names of the attributes to be updated.
-    state -- a list containing the updated new values.
+    values -- a list containing the new attribute values.
     """
     for i, attr in enumerate(attrs):
-        setattr(obj, attr, state[i])
+        setattr(obj, attr, values[i])
 
 
-def save_object(obj, obj_id: str, attrs: List[str], pickler: Pickler):
+def pickle_obj_attrs(obj, obj_id: str, attrs: List[str], pickler: Pickler):
     """
-    Saves the state of an object to a file. The file path is uniquely generated
-    based on the initialization arguments (*args and **kwargs). The state of the
-    object is the values of the attributes whose names are given.
+    Saves the attributes of an object using a pickler.
 
-    obj -- the object
+    obj -- the object.
     obj_id -- a string that uniquely identify the object.
     attrs -- a list containing the names of the attributes to be saved.
+    pickler -- the pickler to use.
     """
 
     if obj is None:
@@ -94,28 +96,26 @@ def save_object(obj, obj_id: str, attrs: List[str], pickler: Pickler):
         raise ValueError(
             'Invalid attrs. Expecting a list of at least one item.')
 
-    # Retrieve the state of the object.
-    state = get_state(obj, attrs)
+    # Retrieve the values of the attributes.
+    values = get_obj_attrs(obj, attrs)
 
-    # Save the state of the object to a file.
-    pickler.dump(obj_id, state)
+    # Save the values using the pickler.
+    pickler.dump(obj_id, values)
 
 
-def load_object(obj, obj_id: str, attrs: List[str], pickler: Pickler):
+def unpickle_obj_attrs(obj, obj_id: str, attrs: List[str], pickler: Pickler):
     """
-    Loads the state of an object from a file. The file path is uniquely generated
-    based on the initilization arguments (*args and **kwargs). The file should
-    have been previously saved via save_object() method with the same list of
-    attributes.
+    Loads the attributes of an object from a pickler.
 
-    obj -- the object
+    obj -- the object.
     obj_id -- a string that uniquely identify the object.
-    attrs -- a list containing the names of the attributes to be saved.
+    attrs -- a list containing the names of the attributes to be loaded.
+    pickler -- the pickler to load the attributes from.
 
     Returns:
-    True -- if the object was successfully loaded from a file. 
-    False -- if a file for the given object, args, and keyword arguments was not
-      found or its content doesn't match the expected state.
+    True -- if the attributes were successfully loaded from pickler.
+    False -- if no attributes were found for the given object ID, or if the
+      attributes found were more or less than the expected number of attributes.
     """
 
     if obj is None:
@@ -124,7 +124,7 @@ def load_object(obj, obj_id: str, attrs: List[str], pickler: Pickler):
         raise ValueError(
             'Invalid attrs. Expecting a list of at least one item.')
 
-    # Retrieve the state of the object from the pickler.
+    # Retrieve the values of the attributes from the pickler.
     try:
         state = pickler.load(obj_id)
     except ObjectNotFoundError:
@@ -135,7 +135,7 @@ def load_object(obj, obj_id: str, attrs: List[str], pickler: Pickler):
         return False
 
     # Update the state of the object based on the loaded content.
-    update_state(obj, attrs, state)
+    set_obj_attrs(obj, attrs, state)
 
     return True
 
@@ -178,17 +178,17 @@ class StatefulObject():
                 "the class as it already has a method with such name.")
 
         def new_init(self, *args, **kwargs):
-            self._state_id = object_id(self, *args, **kwargs)
+            self._obj_id = object_id(self, *args, **kwargs)
             if 'force_init' in kwargs and kwargs['force_init'] == True:
                 del kwargs['force_init']
                 init(self, *args, **kwargs)
-                save_object(self, self._state_id, attrs, pickler)
-            elif not load_object(self, self._state_id, attrs, pickler):
+                pickle_obj_attrs(self, self._obj_id, attrs, pickler)
+            elif not unpickle_obj_attrs(self, self._obj_id, attrs, pickler):
                 init(self, *args, **kwargs)
-                save_object(self, self._state_id, attrs, pickler)
+                pickle_obj_attrs(self, self._obj_id, attrs, pickler)
 
         def save_state(self):
-            save_object(self, self._state_id, attrs, pickler)
+            pickle_obj_attrs(self, self._obj_id, attrs, pickler)
 
         cls.__init__ = new_init
         setattr(cls, save_state_method_name, save_state)
