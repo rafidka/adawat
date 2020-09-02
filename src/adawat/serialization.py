@@ -141,8 +141,8 @@ def unpickle_obj_attrs(obj, obj_id: str, attrs: List[str], pickler: Pickler):
 
 
 def stateful(attrs: List[str] = ["state_dict"],
-             save_state_method_name='save_state',
-             pickler=FilePickler()):
+             save_state_method_name: str = None,
+             pickler: Pickler = FilePickler()):
     """
     A decorator that can be applied to a class to make it save its status to the
     disk and automatically used the saved status next time the object is
@@ -172,11 +172,8 @@ class StatefulObject():
                 "The @stateful decorator can only be applied to classes.")
         init = cls.__init__
 
-        if hasattr(cls, save_state_method_name):
-            raise RuntimeError(
-                f"Cannot add a method called '{save_state_method_name}' to " +
-                "the class as it already has a method with such name.")
-
+        # Override the constructor of the class with one that checks for a
+        # state and calls the original constructor if there is none.
         def new_init(self, *args, **kwargs):
             self._obj_id = object_id(self, *args, **kwargs)
             if 'force_init' in kwargs and kwargs['force_init'] == True:
@@ -187,11 +184,19 @@ class StatefulObject():
                 init(self, *args, **kwargs)
                 pickle_obj_attrs(self, self._obj_id, attrs, pickler)
 
-        def save_state(self):
-            pickle_obj_attrs(self, self._obj_id, attrs, pickler)
-
         cls.__init__ = new_init
-        setattr(cls, save_state_method_name, save_state)
+
+        # Optionally, define a save_state method for the class.
+        if save_state_method_name is not None:
+            if hasattr(cls, save_state_method_name):
+                raise RuntimeError(
+                    f"Cannot add a method called '{save_state_method_name}' to " +
+                    "the class as it already has a method with such name.")
+
+            def save_state(self):
+                pickle_obj_attrs(self, self._obj_id, attrs, pickler)
+
+            setattr(cls, save_state_method_name, save_state)
 
         return cls
 

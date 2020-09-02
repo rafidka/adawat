@@ -112,7 +112,7 @@ class Test_stateful_save_method:
 
     def test_nonconflicting_method_name(self):
         try:
-            @ stateful(save_state_method_name='save_state')
+            @stateful(save_state_method_name='save_state')
             class TestWithoutConflictingStateMethod:
                 def __init__(self):
                     self.state_dict = {}
@@ -125,7 +125,7 @@ class Test_stateful_save_method:
             self.fail()
 
     def test_method_behaviour(self):
-        @ stateful(attrs=['state_dict'])
+        @stateful(attrs=['state_dict'], save_state_method_name='save_state')
         class StatefulObject():
             def __init__(self):
                 self.state_dict = {}
