@@ -26,6 +26,10 @@ class Pickler(ABC):
     def load(self, obj_id: str):
         pass
 
+    @abstractmethod
+    def delete(self, obj_id: str):
+        pass
+
 
 class FilePickler(Pickler):
     def _filepath(self, key):
@@ -35,8 +39,10 @@ class FilePickler(Pickler):
 
     def dump(self, obj_id: str, obj):
         filepath = self._filepath(obj_id)
+        log.debug(f"Saving object with id {obj_id} to {filepath}.")
         with open(filepath, 'wb') as file:
             pickle.dump(obj, file, protocol=pickle.HIGHEST_PROTOCOL)
+        log.debug(f"Saved object with id {obj_id} to {filepath}.")
 
     def load(self, obj_id: str):
         filepath = self._filepath(obj_id)
@@ -46,7 +52,19 @@ class FilePickler(Pickler):
                 f"Couldn't find the file {filepath} while trying to load object with ID {obj_id}.")
 
         with open(filepath, 'rb') as file:
-            return pickle.load(file)
+            log.debug(f"Loading object with id {obj_id} from {filepath}.")
+            obj = pickle.load(file)
+            log.debug(f"Loaded object with id {obj_id} from {filepath}.")
+            return obj
+
+    def delete(self, obj_id: str):
+        filepath = self._filepath(obj_id)
+        if os.path.exists(filepath):
+            log.debug(
+                f"Deleting object with id {obj_id}. Deleting the file {filepath}.")
+            os.remove(filepath)
+            log.debug(
+                f"Loading object with id {obj_id}. Deleted the file {filepath}.")
 
 
 class S3Pickler(Pickler):
@@ -62,6 +80,14 @@ class S3Pickler(Pickler):
     def _bucket_exists(self) -> bool:
         try:
             self.client.head_bucket(Bucket=self.bucket)
+            return True
+        except self.client.exceptions.ClientError:
+            # The bucket does not exist or you have no access.
+            return False
+
+    def _object_exists(self, obj_id: str) -> bool:
+        try:
+            self.client.head_object(Bucket=self.bucket, Key=obj_id)
             return True
         except self.client.exceptions.ClientError:
             # The bucket does not exist or you have no access.
@@ -135,3 +161,11 @@ class S3Pickler(Pickler):
         except Exception as e:
             log.exception(e)
             raise ObjectNotFoundError() from e
+
+    def delete(self, obj_id: str):
+        if self._object_exists(obj_id):
+            log.debug(
+                f"Deleting object with id {obj_id}. Removing S3 object s3://{self.bucket}/{obj_id} .")
+            self.client.delete_object(Bucket=self.bucket, Key=obj_id)
+            log.debug(
+                f"Deleted object with id {obj_id}. Removed S3 object s3://{self.bucket}/{obj_id} .")

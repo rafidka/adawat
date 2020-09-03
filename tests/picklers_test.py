@@ -1,4 +1,4 @@
-from adawat.picklers import FilePickler
+from adawat.picklers import FilePickler, ObjectNotFoundError
 
 
 def test_FilePickler():
@@ -17,3 +17,14 @@ def test_FilePickler():
     some_obj_loaded = pickler.load(some_obj_id)
 
     assert some_obj == some_obj_loaded
+
+    # Delete the object
+    pickler.delete(some_obj_id)
+
+    # Reload the object and
+    try:
+        pickler.load(some_obj_id)
+        assert False
+    except ObjectNotFoundError:
+        # We are good.
+        pass
