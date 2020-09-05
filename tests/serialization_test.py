@@ -1,3 +1,4 @@
+from datetime import datetime
 import pytest
 from adawat.serialization import object_sig, object_id, get_obj_attrs, \
     set_obj_attrs, unpickle_obj_attrs, pickle_obj_attrs, stateful
@@ -125,19 +126,88 @@ class Test_stateful_save_method:
             self.fail()
 
     def test_method_behaviour(self):
+        constructor_call_count = 0
+
         @stateful(attrs=['state_dict'], save_state_method_name='save_state')
         class StatefulObject():
-            def __init__(self):
+            def __init__(self, id: int):
+                self.id = id
                 self.state_dict = {}
+                nonlocal constructor_call_count
+                constructor_call_count += 1
 
         some_state = {
             'test_key': 'test_value'
         }
 
-        obj = StatefulObject()
+        # Use timestamp as a unique id to avoid using states saved from a
+        # previous run.
+        id = datetime.now().timestamp()
+
+        obj = StatefulObject(id)
         obj.state_dict = some_state
         obj.save_state()
 
         # re-instantiate the object and ensure the state is as expected
-        obj = StatefulObject()
+        obj = StatefulObject(id)
         assert obj.state_dict == some_state
+
+        # ensure the constructor was only called once.
+        assert constructor_call_count == 1
+
+
+class Test_stateful_delete_method:
+    def test_conflicting_method_name(self):
+        with pytest.raises(RuntimeError):
+            @ stateful(delete_state_method_name='delete_state')
+            class TestWithConflictingStateMethod:
+                def __init__(self):
+                    self.state_dict = {}
+
+                def delete_state(self):
+                    pass
+            TestWithConflictingStateMethod()  # to avoid unused class warning
+
+    def test_nonconflicting_method_name(self):
+        try:
+            @stateful(delete_state_method_name='delete_state')
+            class TestWithoutConflictingStateMethod:
+                def __init__(self):
+                    self.state_dict = {}
+
+                def delete_state_other(self):
+                    pass
+            assert hasattr(TestWithoutConflictingStateMethod, 'delete_state')
+            assert callable(TestWithoutConflictingStateMethod.delete_state)
+        except Exception:
+            self.fail()
+
+    def test_method_behaviour(self):
+        constructor_call_count = 0
+
+        @stateful(attrs=['state_dict'], delete_state_method_name='delete_state')
+        class StatefulObject():
+            def __init__(self, id: int):
+                self.id = id
+                self.state_dict = {}
+                nonlocal constructor_call_count
+                constructor_call_count += 1
+
+        some_state = {
+            'test_key': 'test_value'
+        }
+
+        # Use timestamp as a unique id to avoid using states saved from a
+        # previous run.
+        id = datetime.now().timestamp()
+
+        obj = StatefulObject(id)
+        obj.state_dict = some_state
+        obj.delete_state()
+
+        # re-instantiate the object and ensure the state is as expected
+        obj = StatefulObject()
+        assert obj.state_dict == {}
+
+        # ensure the constructor was only called again after deletion of state.
+        assert constructor_call_count == 1
