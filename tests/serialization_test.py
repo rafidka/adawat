@@ -1,7 +1,8 @@
 from datetime import datetime
 import pytest
 from adawat.serialization import object_sig, object_id, get_obj_attrs, \
-    set_obj_attrs, unpickle_obj_attrs, pickle_obj_attrs, stateful
+    set_obj_attrs, unpickle_obj_attrs, pickle_obj_attrs, stateful, \
+    StateMachine
 from adawat.picklers import FilePickler
 
 
@@ -205,9 +206,39 @@ class Test_stateful_delete_method:
         obj.state_dict = some_state
         obj.delete_state()
 
+        # Reset the constructor call count.
+        constructor_call_count = 0
+
         # re-instantiate the object and ensure the state is as expected
-        obj = StatefulObject()
+        obj = StatefulObject(id)
         assert obj.state_dict == {}
 
-        # ensure the constructor was only called again after deletion of state.
+        # ensure the constructor was called again after deletion of state.
         assert constructor_call_count == 1
+
+
+class Test_StateMachine:
+    def test_simple(self):
+        states = []
+
+        class TestMachine(StateMachine):
+            def __init__(self, id: str):
+                super().__init__(id, "state1")  # state1 is the starting state
+
+            def state1(self):
+                states.append("state1")
+                return "state2", {}
+
+            def state2(self):
+                states.append("state2")
+                return "state3", {}
+
+            def state3(self):
+                states.append("state3")
+                return None, {}
+
+        test_machine = TestMachine("test_id")
+        while test_machine.run_next():
+            pass
+
+        assert states == ["state1", "state2", "state3"]
