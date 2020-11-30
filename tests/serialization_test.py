@@ -1,9 +1,11 @@
 from datetime import datetime
+
 import pytest
-from adawat.serialization import object_sig, object_id, get_obj_attrs, \
-    set_obj_attrs, unpickle_obj_attrs, pickle_obj_attrs, stateful, \
-    StateMachine
+
 from adawat.picklers import FilePickler
+from adawat.serialization import (get_obj_attrs, object_id, object_sig,
+                                  pickle_obj_attrs, set_obj_attrs, stateful,
+                                  unpickle_obj_attrs)
 
 
 class SomeClass():
@@ -58,7 +60,7 @@ class Test_object_id:
         assert actual_id == expected_id
 
 
-class Test_get_state:
+class Test_get_obj_attrs:
     def test(self):
         obj = SomeClass()
         obj.name = 'Test Name'
@@ -68,7 +70,7 @@ class Test_get_state:
         assert state == ['Test Name', 123]
 
 
-class Test_update_state:
+class Test_set_obj_attrs:
     def test(self):
         obj = SomeClass()
         obj.name = 'Test Name'
@@ -80,7 +82,7 @@ class Test_update_state:
         assert obj.value == 12345
 
 
-class Test_save_load_object:
+class Test_pickle_unpickle:
     def test(self):
         obj = SomeClass()
         obj.name = 'Test Name'
@@ -215,30 +217,3 @@ class Test_stateful_delete_method:
 
         # ensure the constructor was called again after deletion of state.
         assert constructor_call_count == 1
-
-
-class Test_StateMachine:
-    def test_simple(self):
-        states = []
-
-        class TestMachine(StateMachine):
-            def __init__(self, id: str):
-                super().__init__(id, "state1")  # state1 is the starting state
-
-            def state1(self):
-                states.append("state1")
-                return "state2", {}
-
-            def state2(self):
-                states.append("state2")
-                return "state3", {}
-
-            def state3(self):
-                states.append("state3")
-                return None, {}
-
-        test_machine = TestMachine("test_id")
-        while test_machine.run_next():
-            pass
-
-        assert states == ["state1", "state2", "state3"]
