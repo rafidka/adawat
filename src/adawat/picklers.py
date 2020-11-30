@@ -31,6 +31,37 @@ class Pickler(ABC):
         pass
 
 
+class MemoryPickler(Pickler):
+    def __init__(self):
+        self.storage = {}
+
+    def dump(self, obj_id: str, obj):
+        obj_bytes = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
+        log.debug(f"Saving object with id {obj_id} to memory.")
+        self.storage[obj_id] = obj_bytes
+        log.debug(f"Saved object with id {obj_id} to memory.")
+
+    def load(self, obj_id: str):
+        if not obj_id in self.storage:
+            raise ObjectNotFoundError(
+                f"Couldn't find object with id {obj_id} in memory.")
+        try:
+            log.debug(f"Loading object with id {obj_id} from memory.")
+            obj_bytes = self.storage[obj_id]
+            obj = pickle.loads(obj_bytes)
+            log.debug(f"Loaded object with id {obj_id} from memory.")
+            return obj
+        except Exception as e:
+            log.exception(e)
+            raise ObjectNotFoundError() from e
+
+    def delete(self, obj_id: str):
+        if obj_id in self.storage:
+            log.debug(f"Deleting object with id {obj_id} from memory.")
+            del self.storage[obj_id]
+            log.debug(f"Deleted object with id {obj_id} from memory.")
+
+
 class FilePickler(Pickler):
     def _filepath(self, key):
         filename = f'f{key}.state'
