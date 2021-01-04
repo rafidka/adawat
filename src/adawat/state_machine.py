@@ -8,6 +8,9 @@ from adawat.picklers import MemoryPickler, ObjectNotFoundError, Pickler
 from adawat.serialization import stateful
 
 
+log = logging.getLogger(__name__)
+
+
 class PersistentStateMachine(ABC):
     def __init__(self, id: str, start_state: str, pickler=MemoryPickler()):
         self.id = id
@@ -56,8 +59,10 @@ class PersistentStateMachine(ABC):
         next_state = self.state.next_state
         if next_state is None:
             next_state = self.start_state
+
         try:
             func = self.get_state_func(next_state)
+            log.debug(f'Running state {next_state}')
         except Exception as e:
             raise RuntimeError(
                 f"Failed to retrieve the function for running the next " +
@@ -78,11 +83,15 @@ class PersistentStateMachine(ABC):
         if self.state.next_state is None:
             # We are done. Delete the state so another instantiation of the
             # machine starts from the beginning.
+            log.debug(
+                f"'{next_state}' is the last state. No more states to execute.")
             self.state.delete()
             return False
         else:
             # Still more states to go. Save the state so if this instance of
             # the state function die before completion, another instantiation
             # continue from the last state.
+            log.debug(f"'{next_state}' is not the last state. " +
+                      f"'{self.state.next_state}' will be executed next.")
             self.state.save()
             return True
