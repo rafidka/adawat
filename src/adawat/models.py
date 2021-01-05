@@ -151,7 +151,7 @@ class ModelTrainerStateMachine(PersistentStateMachine):
 
         losses.append(total_loss / iter_count)
 
-        if epoch <= epochs:
+        if epoch < epochs:
             # Still more epochs.
             return self.train_epoch.__name__, {
                 "model_state_dict": self.model.state_dict(),
