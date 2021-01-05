@@ -99,9 +99,10 @@ class FilePickler(Pickler):
 
 
 class S3Pickler(Pickler):
-    def __init__(self, client, bucket: str):
+    def __init__(self, client, bucket: str, prefix: str = ''):
         self.client = client
         self.bucket = bucket
+        self.prefix = prefix
         self.ready = False
 
         self._create_bucket()
@@ -118,7 +119,8 @@ class S3Pickler(Pickler):
 
     def _object_exists(self, obj_id: str) -> bool:
         try:
-            self.client.head_object(Bucket=self.bucket, Key=obj_id)
+            self.client.head_object(
+                Bucket=self.bucket, Key=self.prefix + obj_id)
             return True
         except self.client.exceptions.ClientError:
             # The bucket does not exist or you have no access.
@@ -164,13 +166,13 @@ class S3Pickler(Pickler):
         obj_bytes = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
         try:
             log.debug(
-                f"Saving object with id {obj_id} to s3://{self.bucket}/{obj_id} .")
+                f"Saving object with id {obj_id} to s3://{self.bucket}/{self.prefix}{obj_id} .")
 
             self.client.put_object(
-                Body=obj_bytes, Bucket=self.bucket, Key=obj_id)
+                Body=obj_bytes, Bucket=self.bucket, Key=self.prefix + obj_id)
 
             log.debug(
-                f"Saved object with id {obj_id} to s3://{self.bucket}/{obj_id} .")
+                f"Saved object with id {obj_id} to s3://{self.bucket}/{self.prefix}{obj_id} .")
         except Exception as e:
             # dump() methods silently fail so it doesn't impact execution, so
             # we just log the exception for visibility.
@@ -179,14 +181,15 @@ class S3Pickler(Pickler):
     def load(self, obj_id: str):
         try:
             log.debug(
-                f"Loading object with id {obj_id} from s3://{self.bucket}/{obj_id} .")
+                f"Loading object with id {obj_id} from s3://{self.bucket}/{self.prefix}{obj_id} .")
 
-            response = self.client.get_object(Bucket=self.bucket, Key=obj_id)
+            response = self.client.get_object(
+                Bucket=self.bucket, Key=self.prefix + obj_id)
             obj_bytes = response['Body'].read()
             obj = pickle.loads(obj_bytes)
 
             log.debug(
-                f"Loaded object with id {obj_id} from s3://{self.bucket}/{obj_id} .")
+                f"Loaded object with id {obj_id} from s3://{self.bucket}/{self.prefix}{obj_id} .")
 
             return obj
         except Exception as e:
@@ -196,7 +199,8 @@ class S3Pickler(Pickler):
     def delete(self, obj_id: str):
         if self._object_exists(obj_id):
             log.debug(
-                f"Deleting object with id {obj_id}. Removing S3 object s3://{self.bucket}/{obj_id} .")
-            self.client.delete_object(Bucket=self.bucket, Key=obj_id)
+                f"Deleting object with id {obj_id} from s3://{self.bucket}/{self.prefix}{obj_id} .")
+            self.client.delete_object(
+                Bucket=self.bucket, Key=self.prefix + obj_id)
             log.debug(
-                f"Deleted object with id {obj_id}. Removed S3 object s3://{self.bucket}/{obj_id} .")
+                f"Deleted object with id {obj_id} from s3://{self.bucket}/{self.prefix}{obj_id} .")
