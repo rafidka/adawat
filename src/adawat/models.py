@@ -1,4 +1,5 @@
 import logging
+import math
 from operator import itemgetter
 from typing import Any, Callable
 
@@ -127,8 +128,30 @@ class ModelTrainerStateMachine(PersistentStateMachine):
 
         total_loss = 0.0
 
-        iter_count = len(self.train_loader)
+        # The __len__ property of DataLoader had its behaviour change somewhere
+        # between verison 1.4.0 and 1.7.1:
+        #
+        # v1.4.0: https://github.com/pytorch/pytorch/blob/v1.4.0/torch/utils/data/dataloader.py#L297-L316
+        # v1.7.1: https://github.com/pytorch/pytorch/blob/v1.7.1/torch/utils/data/dataloader.py#L370-L397
+        #
+        # In short, in v1.4.0, __len__ returns the total number of samples in
+        # the training data while in v1.7.1 it returns the total unmber of
+        # batches. We want the latter. However, we don't know what versions of
+        # PyTorch the library is running against, e.g. on my local machine I am
+        # running the latest (1.7.1 at this time) while on AWS SageMaker's
+        # conda_pytorch_p36 image it is 1.4.0 as of now. To make sure the
+        # behaviour of this method is consistent, we calculate the number of
+        # batches ourselves.
+        iter_count = len(self.train_loader.dataset)
+        if self.train_loader.batch_size is not None:
+            if self.train_loader.drop_last:
+                iter_count = iter_count // self.train_loader.batch_size
+            else:
+                iter_count = math.ceil(
+                    iter_count / self.train_loader.batch_size)
+
         last_perc_completed = 0
+
         for i, (X, y) in enumerate(self.train_loader):
             if self.optim_updater is not None:
                 self.optim_updater(optim, epoch, i, iter_count)
