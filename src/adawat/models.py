@@ -24,7 +24,8 @@ class ModelTrainerStateMachine(PersistentStateMachine):
             optim_updater: Callable[[
                 torch.optim.Optimizer, int, int, int], None] = None,
             device: torch.cuda.device = None,
-            pickler=MemoryPickler()):
+            pickler=MemoryPickler(),
+            force_restart=False):
         """
         model_creator -- A function with no parameters that when called creates
             the model.
@@ -76,8 +77,14 @@ class ModelTrainerStateMachine(PersistentStateMachine):
                 for g in optim.param_groups:
                     g['lr'] = new_lr
             ```
+
+        force_restart -- (Optional) If true, the model training will start from
+            the beginning regardless of the last status. 
         """
-        super().__init__(id, "train_init", pickler)  # train_init is the starting state
+        super().__init__(id,
+                         "train_init",  # the starting state; defined below
+                         pickler,
+                         force_restart)
         self.model_creator = model_creator
         self.loss_fn_creator = loss_fn_creator
         self.train_loader = train_loader

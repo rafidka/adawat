@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 
 class PersistentStateMachine(ABC):
-    def __init__(self, id: str, start_state: str, pickler=MemoryPickler()):
+    def __init__(self, id: str, start_state: str, pickler=MemoryPickler(), force_restart=False):
         self.id = id
         self.start_state = start_state
 
@@ -34,7 +34,7 @@ class PersistentStateMachine(ABC):
         # Construct a persistent state for the state machine. This class is
         # decorated with the @stateful decorator, making it automatically
         # restore the last state.
-        self.state = PersistentState(id)
+        self.state = PersistentState(id, force_init=force_restart)
 
     def get_state_func(self, func_name):
         """

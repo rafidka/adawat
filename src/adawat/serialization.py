@@ -175,11 +175,17 @@ class StatefulObject():
         # state and calls the original constructor if there is none.
         def new_init(self, *args, **kwargs):
             self._obj_id = object_id(self, *args, **kwargs)
-            if 'force_init' in kwargs and kwargs['force_init'] == True:
+            force_init = 'force_init' in kwargs and kwargs['force_init'] == True
+            if 'force_init' in kwargs:
                 del kwargs['force_init']
+            if force_init:
+                log.debug(
+                    'force_init is True; ignoring saved state if any and calling init().')
                 init(self, *args, **kwargs)
                 pickle_obj_attrs(self, self._obj_id, attrs, pickler)
             elif not unpickle_obj_attrs(self, self._obj_id, attrs, pickler):
+                log.debug(
+                    'force_init is NOT True, but no saved state was found, so calling init().')
                 init(self, *args, **kwargs)
                 pickle_obj_attrs(self, self._obj_id, attrs, pickler)
 
