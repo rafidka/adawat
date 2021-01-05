@@ -10,14 +10,21 @@ from adawat.serialization import stateful
 UNKNOWN_WORD = '<unk>'
 
 
-@stateful(attrs=[
-    'tokens_per_line',
-    'tokens',
-    'vocab',
-    'vocab_size',
-    '_word2idx',
-    '_idx2word',
-])
+# TODO Disabling stateful-ness at this point, since the lines argument, which
+# is an iterator, might have different values even for the same content, hence
+# resulting in a new state ID every time. In fact, even if it is not an
+# iterator, e.g. list, we probably don't want to use its string representation
+# as part of the ID. We should probably allow the user to specify an ID or modify
+# the @stateful decorator to only use the ID as the key of the object.
+# 1. Modifying
+# @stateful(attrs=[
+#     'tokens_per_line',
+#     'tokens',
+#     'vocab',
+#     'vocab_size',
+#     '_word2idx',
+#     '_idx2word',
+# ])
 class Corpus():
     def __init__(self,
                  lines: Iterable[str],
