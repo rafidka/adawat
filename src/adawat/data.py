@@ -2,10 +2,6 @@ import torch
 from torch import nn
 from typing import Any, Callable, List, Iterable
 
-from torch.utils.data.dataloader import DataLoader
-
-DataLoader
-
 
 class ListDataset(torch.utils.data.Dataset):
     """Converts a normal Python list into a PyTorch Dataset for use with
