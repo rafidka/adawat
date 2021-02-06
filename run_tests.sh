@@ -4,4 +4,4 @@
     echo "Adawat requires Python 3."
 }
 
-pytest
+pytest -v
