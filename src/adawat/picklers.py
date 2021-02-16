@@ -63,9 +63,13 @@ class MemoryPickler(Pickler):
 
 
 class FilePickler(Pickler):
+    def __init__(self, path=tempfile.gettempdir()):
+        self.path = path
+        pass
+
     def _filepath(self, key):
-        filename = f'f{key}.state'
-        filepath = os.path.join(tempfile.gettempdir(), filename)
+        filename = f'{key}.state'
+        filepath = os.path.join(self.path, filename)
         return filepath
 
     def dump(self, obj_id: str, obj):
