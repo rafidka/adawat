@@ -1,9 +1,15 @@
 import torch
 from torch import nn
-from typing import Any, Callable, List, Iterable
+from typing import Any, Callable, List, Iterable, TypeVar
+
+T = TypeVar('T')
+S = TypeVar('S')
 
 
-class ListDataset(torch.utils.data.Dataset):
+# TODO Remove the 'targets' from this class; we don't need the dataset to be
+# specific to features and targets tuples as we can do that by combining
+# multiple datasets, e.g. via the ZipDataset.
+class ListBasedDataset(torch.utils.data.Dataset):
     """Converts a normal Python list into a PyTorch Dataset for use with
     DataLoaders."""
 
@@ -28,29 +34,65 @@ class ListDataset(torch.utils.data.Dataset):
         return self.len
 
 
-class IterableDataset(torch.utils.data.IterableDataset):
-    def __init__(self, features: Iterable, targets: Iterable,
-                 features_transform: Callable[[Any], torch.tensor] = None,
-                 targets_transform: Callable[[Any], torch.tensor] = None,
+class IterableBasedDataset(torch.utils.data.IterableDataset):
+    """
+    A dataset based on a Python iterable.
+    """
+
+    def __init__(self,
+                 iterable: Iterable,
+                 transform: Callable = None,
                  length: int = None):
-        self.features = features
-        self.targets = targets
-        self.features_transform = features_transform if features_transform is not None else lambda x: x
-        self.targets_transform = targets_transform if targets_transform is not None else lambda x: x
+        """
+        Constructs a new iterable-based dataset.
+
+        Keyword arguments:
+        iterable -- The iterable used in the dataset.
+        transform -- (Optional) A transform to make some modification on each
+            element before returning it.
+        length -- (Optional) If specified, the iterable will have a length
+            retrievable via the len() method.
+        """
+        self.iterable = iterable
+        self.transform = transform if transform is not None else lambda x: x
         self.length = length
 
     def __len__(self):
         if self.length is None:
-            raise RuntimeError(
+            # Raise AttributeError to mimic the behaviour of not having a
+            # __len__ defined.
+            raise AttributeError(
                 "Length was not specified during the instantiation of this " +
-                "dataset. For instances of IterableDataset, the length " +
+                "dataset. For instances of IterableBasedDataset, the length " +
                 "cannot be found without iterating through the iterable " +
                 "till the end, which could be an expensive operation and " +
                 "is against the nature of iterables.")
         return self.length
 
     def __iter__(self):
-        def transform(feature, target):
-            return (self.features_transform(feature), self.targets_transform(target))
+        return map(self.transform, self.iterable)
 
-        return map(transform, self.features, self.targets)
+
+class ZipDataset(torch.utils.data.IterableDataset):
+    def __init__(self, *args: Iterable, transform=None, length: int = None):
+        self.iterables = args
+        self.transform = transform
+        self.length = length
+
+    def __len__(self):
+        if self.length is None:
+            # Raise AttributeError to mimic the behaviour of not having a
+            # __len__ defined.
+            raise AttributeError(
+                "Length was not specified during the instantiation of this " +
+                "dataset. For instances of ZipDataset, the length " +
+                "cannot be found without iterating through the iterable " +
+                "till the end, which could be an expensive operation and " +
+                "is against the nature of iterables.")
+        return self.length
+
+    def __iter__(self):
+        if self.transform:
+            return map(self.transform, *self.iterables)
+        else:
+            return zip(*self.iterables)
