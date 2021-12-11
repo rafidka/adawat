@@ -16,7 +16,7 @@ jobs:
           python-version: "3.9"
       - name: Install build dependencies
         # Install torch as adawat depends on it.
-        run: pip install -U setuptools wheel build torch pytest more-itertools
+        run: pip install -U setuptools wheel build torch pytest more-itertools numpy
       - name: Build
         run: python -m build .
       - name: Test
