@@ -1,4 +1,6 @@
-from typing import TypeVar, Generic, Callable, List
+from typing import Any, TypeVar, Generic, Callable, List
+
+import numpy as np
 import torch
 
 
@@ -17,8 +19,8 @@ class Compose(object):
         return obj
 
 
-TWord = TypeVar('T')
-TIdx = TypeVar('T')
+TWord = TypeVar('TWord')
+TIdx = TypeVar('TIdx')
 
 
 class WordToIndex(Generic[TWord, TIdx]):
