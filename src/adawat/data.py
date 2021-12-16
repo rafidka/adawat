@@ -151,9 +151,9 @@ def Shuffle(queue_size, seed=None):
 
 def _length_fn(x, length_keys):
     if length_keys is not None and isinstance(x, (list, tuple)):
-        return min(len(x[idx]) for idx in length_keys)
+        return max(len(x[idx]) for idx in length_keys)
     elif length_keys is not None and isinstance(x, dict):
-        return min(len(x[key]) for key in length_keys)
+        return max(len(x[key]) for key in length_keys)
     else:
         return len(x)
 
